@@ -58,13 +58,37 @@ export default function App() {
 
   const particles = useMemo(
     () =>
-      Array.from({ length: 26 }, (_, idx) => ({
+      Array.from({ length: 46 }, (_, idx) => ({
         id: idx,
         left: 3 + (idx * 97) % 95,
         top: 2 + (idx * 41) % 95,
         size: 2 + (idx % 3),
         duration: 5 + (idx % 8),
         delay: (idx % 7) * -0.65
+      })),
+    []
+  );
+
+  const floatingParticles = useMemo(
+    () =>
+      Array.from({ length: 84 }, (_, idx) => ({
+        id: idx,
+        left: 2 + ((idx * 57) % 96),
+        top: 6 + ((idx * 37) % 88),
+        size: 1 + (idx % 4) * 0.9,
+        duration: 14 + (idx % 9) * 2,
+        delay: (idx % 13) * -0.8
+      })),
+    []
+  );
+
+  const chronoNodes = useMemo(
+    () =>
+      Array.from({ length: 24 }, (_, idx) => ({
+        id: idx,
+        angle: idx * 15,
+        delay: idx * -0.26,
+        radius: idx % 2 === 0 ? "min(35vmin, 23rem)" : "min(29vmin, 19rem)"
       })),
     []
   );
@@ -173,15 +197,51 @@ export default function App() {
   return (
     <div className="relative min-h-screen overflow-hidden text-slate-100">
       <div className="bg-gradient-animated absolute inset-0" aria-hidden="true"></div>
+      <div className="bg-theme-wash absolute inset-0" aria-hidden="true"></div>
+      <div className="bg-theme-sheen absolute inset-0" aria-hidden="true"></div>
 
       <div className="glow-orb a" aria-hidden="true"></div>
       <div className="glow-orb b" aria-hidden="true"></div>
       <div className="glow-orb c" aria-hidden="true"></div>
 
+      <div className="chrono-bg" aria-hidden="true">
+        <div className="chrono-ring ring-outer"></div>
+        <div className="chrono-ring ring-inner"></div>
+        <div className="chrono-sweep sweep-a"></div>
+        <div className="chrono-sweep sweep-b"></div>
+        {chronoNodes.map((node) => (
+          <span
+            key={`chrono-${node.id}`}
+            className="chrono-node"
+            style={{
+              "--angle": `${node.angle}deg`,
+              "--node-delay": `${node.delay}s`,
+              "--node-radius": node.radius
+            }}
+          ></span>
+        ))}
+      </div>
+
       {particles.map((particle) => (
         <span
           key={particle.id}
           className="particle"
+          style={{
+            left: `${particle.left}%`,
+            top: `${particle.top}%`,
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
+            "--duration": `${particle.duration}s`,
+            "--delay": `${particle.delay}s`
+          }}
+          aria-hidden="true"
+        ></span>
+      ))}
+
+      {floatingParticles.map((particle) => (
+        <span
+          key={`f-${particle.id}`}
+          className="particle particle-slow"
           style={{
             left: `${particle.left}%`,
             top: `${particle.top}%`,
@@ -230,7 +290,7 @@ export default function App() {
                 <div
                   role="timer"
                   aria-live="polite"
-                  className="timer-row mx-auto flex w-fit items-center justify-center"
+                  className="timer-row relative z-10 mx-auto flex w-fit items-center justify-center"
                 >
                   <TimeBox label="HOURS" value={hours} phaseClass={phaseClass} />
                   <span className="timer-colon mb-8 px-1 text-6xl text-slate-100 sm:mb-10 sm:px-2 sm:text-7xl">
@@ -274,10 +334,10 @@ export default function App() {
             {showStartToast && (
               <div className="start-toast-wrap">
                 <motion.div
-                  initial={{ opacity: 0, y: -12, scale: 0.94 }}
+                  initial={{ opacity: 0, y: -18, scale: 0.88 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.97 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  exit={{ opacity: 0, y: -14, scale: 0.94 }}
+                  transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
                   className="start-toast"
                 >
                   Time starts now
