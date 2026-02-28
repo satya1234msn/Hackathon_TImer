@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -21,6 +21,107 @@ function getIndicatorColor(remainingMs) {
   if (remainingHours <= 4) return "red";
   if (remainingHours <= 14) return "yellow";
   return "green";
+}
+
+/* ── Premium Background Animation Canvas ── */
+function PremiumBgCanvas() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let animId;
+    let t = 0;
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Floating gradient orbs — large, slow, vivid
+    const orbs = [
+      { x: 0.2, y: 0.3, r: 0.28, color: [6, 182, 212, 0.35], speed: 0.0004, phase: 0 },
+      { x: 0.75, y: 0.2, r: 0.25, color: [139, 92, 246, 0.28], speed: 0.0003, phase: 2 },
+      { x: 0.5, y: 0.7, r: 0.32, color: [20, 184, 166, 0.38], speed: 0.00035, phase: 4 },
+      { x: 0.85, y: 0.65, r: 0.22, color: [59, 130, 246, 0.25], speed: 0.00045, phase: 1 },
+      { x: 0.15, y: 0.75, r: 0.2, color: [168, 85, 247, 0.2], speed: 0.0005, phase: 3 },
+    ];
+
+    function draw() {
+      const w = canvas.width;
+      const h = canvas.height;
+      t++;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw floating gradient orbs
+      for (const orb of orbs) {
+        const cx = (orb.x + Math.sin(t * orb.speed + orb.phase) * 0.08) * w;
+        const cy = (orb.y + Math.cos(t * orb.speed * 0.7 + orb.phase) * 0.06) * h;
+        const radius = orb.r * Math.min(w, h);
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        const [r, g, b, a] = orb.color;
+        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${a})`);
+        grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${a * 0.4})`);
+        grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      // Tech grid
+      ctx.strokeStyle = "rgba(20, 184, 166, 0.035)";
+      ctx.lineWidth = 1;
+      const gridSize = 60;
+      for (let x = 0; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Grid intersection dots — pulse subtly
+      const dotAlpha = 0.05 + Math.sin(t * 0.02) * 0.025;
+      ctx.fillStyle = `rgba(20, 184, 166, ${dotAlpha})`;
+      for (let x = 0; x < w; x += gridSize) {
+        for (let y = 0; y < h; y += gridSize) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Horizontal scanner line
+      const scanY = (t * 0.4) % h;
+      const scanGrad = ctx.createLinearGradient(0, scanY - 1, 0, scanY + 1);
+      scanGrad.addColorStop(0, "rgba(20, 184, 166, 0)");
+      scanGrad.addColorStop(0.5, "rgba(20, 184, 166, 0.06)");
+      scanGrad.addColorStop(1, "rgba(20, 184, 166, 0)");
+      ctx.fillStyle = scanGrad;
+      ctx.fillRect(0, scanY - 25, w, 50);
+
+      animId = requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animId);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="premium-bg-canvas" aria-hidden="true" />;
 }
 
 function TimeBox({ label, value, phaseClass }) {
@@ -54,7 +155,6 @@ export default function App() {
   });
   const [clockNow, setClockNow] = useState(Date.now());
   const [isStarting, setIsStarting] = useState(false);
-  const [showStartToast, setShowStartToast] = useState(false);
 
   const particles = useMemo(
     () =>
@@ -123,7 +223,7 @@ export default function App() {
     });
 
     const poll = setInterval(() => {
-      syncFromServer().catch(() => {});
+      syncFromServer().catch(() => { });
     }, 3000);
 
     return () => clearInterval(poll);
@@ -136,19 +236,17 @@ export default function App() {
     return () => clearInterval(tick);
   }, []);
 
-  useEffect(() => {
-    if (!showStartToast) return undefined;
-    const timeoutId = setTimeout(() => {
-      setShowStartToast(false);
-    }, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [showStartToast]);
-
   const syncedNow = clockNow + state.serverOffsetMs;
   const elapsedMs = state.startedAt === null ? 0 : Math.max(0, syncedNow - state.startedAt);
   const remainingMs =
     state.startedAt === null ? state.durationMs : Math.max(0, state.durationMs - elapsedMs);
   const { hours, minutes, seconds } = useMemo(() => getTimeParts(remainingMs), [remainingMs]);
+
+  // Clock hand angles derived from remaining time
+  const totalSec = Math.max(0, Math.ceil(remainingMs / 1000));
+  const secAngle = ((60 - (totalSec % 60)) % 60) * 6;
+  const minAngle = ((60 - (Math.floor(totalSec / 60) % 60)) % 60) * 6;
+  const hrAngle = ((24 - (Math.floor(totalSec / 3600) % 24)) % 24) * 15;
   const hasStarted = state.startedAt !== null;
   const finished = hasStarted && remainingMs <= 0;
   const indicatorColor = getIndicatorColor(remainingMs);
@@ -183,7 +281,7 @@ export default function App() {
         serverOffsetMs: typeof payload.now === "number" ? payload.now - Date.now() : prev.serverOffsetMs,
         error: ""
       }));
-      setShowStartToast(true);
+      // started successfully
     } catch {
       setState((prev) => ({
         ...prev,
@@ -200,15 +298,19 @@ export default function App() {
       <div className="bg-theme-wash absolute inset-0" aria-hidden="true"></div>
       <div className="bg-theme-sheen absolute inset-0" aria-hidden="true"></div>
 
-      <div className="glow-orb a" aria-hidden="true"></div>
-      <div className="glow-orb b" aria-hidden="true"></div>
-      <div className="glow-orb c" aria-hidden="true"></div>
+      {/* ── New: Premium animated background (gradient orbs + tech grid + scanner) ── */}
+      <PremiumBgCanvas />
+
+      <div className="glow-orb a orb-float" aria-hidden="true"></div>
+      <div className="glow-orb b orb-float" aria-hidden="true"></div>
+      <div className="glow-orb c orb-float" aria-hidden="true"></div>
 
       <div className="chrono-bg" aria-hidden="true">
         <div className="chrono-ring ring-outer"></div>
         <div className="chrono-ring ring-inner"></div>
         <div className="chrono-sweep sweep-a"></div>
         <div className="chrono-sweep sweep-b"></div>
+
         {chronoNodes.map((node) => (
           <span
             key={`chrono-${node.id}`}
@@ -256,7 +358,7 @@ export default function App() {
 
       <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-6 pb-10 pt-16 text-center sm:pt-20">
         <header className="mt-2 w-full space-y-3 sm:space-y-4">
-          <h1 className="font-display text-4xl tracking-[0.1em] text-white sm:text-5xl md:text-6xl">
+          <h1 className="font-display text-4xl tracking-[0.1em] text-white sm:text-5xl md:text-6xl title-breathe">
             UDBHAV 2K26
           </h1>
           <p className="font-body text-base font-medium uppercase tracking-[0.22em] text-cyan-100/90 sm:text-lg">
@@ -307,9 +409,8 @@ export default function App() {
           </AnimatePresence>
 
           <div
-            className={`overflow-hidden transition-all duration-700 ease-out ${
-              hasStarted || isStarting ? "mt-0 max-h-0 opacity-0" : "mt-7 max-h-36 opacity-100"
-            }`}
+            className={`overflow-hidden transition-all duration-700 ease-out ${hasStarted || isStarting ? "mt-0 max-h-0 opacity-0" : "mt-7 max-h-36 opacity-100"
+              }`}
           >
             <button
               type="button"
@@ -330,21 +431,7 @@ export default function App() {
             </p>
           )}
 
-          <AnimatePresence>
-            {showStartToast && (
-              <div className="start-toast-wrap">
-                <motion.div
-                  initial={{ opacity: 0, y: -18, scale: 0.88 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -14, scale: 0.94 }}
-                  transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-                  className="start-toast"
-                >
-                  Time starts now
-                </motion.div>
-              </div>
-            )}
-          </AnimatePresence>
+
         </section>
       </main>
     </div>

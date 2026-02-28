@@ -31,14 +31,12 @@ body {
 }
 
 .bg-gradient-animated {
-  background: linear-gradient(
-    122deg,
-    var(--srkr-night),
-    var(--srkr-slate),
-    var(--srkr-deep),
-    var(--srkr-steel),
-    var(--srkr-mist)
-  );
+  background: linear-gradient(122deg,
+      var(--srkr-night),
+      var(--srkr-slate),
+      var(--srkr-deep),
+      var(--srkr-steel),
+      var(--srkr-mist));
   background-size: 280% 280%;
 }
 
@@ -52,13 +50,11 @@ body {
 }
 
 .bg-theme-sheen {
-  background: linear-gradient(
-    112deg,
-    transparent 20%,
-    rgba(20, 184, 166, 0.08) 48%,
-    rgba(6, 182, 212, 0.08) 56%,
-    transparent 80%
-  );
+  background: linear-gradient(112deg,
+      transparent 20%,
+      rgba(20, 184, 166, 0.08) 48%,
+      rgba(6, 182, 212, 0.08) 56%,
+      transparent 80%);
   background-size: 220% 220%;
   opacity: 0.25;
   mix-blend-mode: screen;
@@ -116,21 +112,15 @@ body {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: repeating-conic-gradient(
-    from 0deg,
-    rgba(167, 243, 208, 0.28) 0deg 3deg,
-    rgba(167, 243, 208, 0) 3deg 12deg
-  );
-  -webkit-mask: radial-gradient(
-    farthest-side,
-    transparent calc(100% - 1.35px),
-    #000 calc(100% - 1px)
-  );
-  mask: radial-gradient(
-    farthest-side,
-    transparent calc(100% - 1.35px),
-    #000 calc(100% - 1px)
-  );
+  background: repeating-conic-gradient(from 0deg,
+      rgba(167, 243, 208, 0.28) 0deg 3deg,
+      rgba(167, 243, 208, 0) 3deg 12deg);
+  -webkit-mask: radial-gradient(farthest-side,
+      transparent calc(100% - 1.35px),
+      #000 calc(100% - 1px));
+  mask: radial-gradient(farthest-side,
+      transparent calc(100% - 1.35px),
+      #000 calc(100% - 1px));
 }
 
 .ring-outer {
@@ -148,11 +138,9 @@ body {
 }
 
 .ring-inner::before {
-  background: repeating-conic-gradient(
-    from 0deg,
-    rgba(103, 232, 249, 0.24) 0deg 2deg,
-    rgba(103, 232, 249, 0) 2deg 10deg
-  );
+  background: repeating-conic-gradient(from 0deg,
+      rgba(103, 232, 249, 0.24) 0deg 2deg,
+      rgba(103, 232, 249, 0) 2deg 10deg);
 }
 
 .chrono-sweep {
@@ -172,12 +160,10 @@ body {
   height: 2px;
   border-radius: 999px;
   transform-origin: 0 50%;
-  background: linear-gradient(
-    90deg,
-    rgba(153, 246, 228, 0.78),
-    rgba(103, 232, 249, 0.32) 50%,
-    rgba(153, 246, 228, 0)
-  );
+  background: linear-gradient(90deg,
+      rgba(153, 246, 228, 0.78),
+      rgba(103, 232, 249, 0.32) 50%,
+      rgba(153, 246, 228, 0));
   box-shadow:
     0 0 10px rgba(94, 234, 212, 0.42),
     0 0 20px rgba(34, 211, 238, 0.2);
@@ -212,12 +198,10 @@ body {
 .sweep-b::before {
   width: 44%;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    rgba(103, 232, 249, 0.82),
-    rgba(45, 212, 191, 0.24) 50%,
-    rgba(103, 232, 249, 0)
-  );
+  background: linear-gradient(90deg,
+      rgba(103, 232, 249, 0.82),
+      rgba(45, 212, 191, 0.24) 50%,
+      rgba(103, 232, 249, 0));
   animation: chronoSweepReverse 10s linear infinite;
 }
 
@@ -421,9 +405,11 @@ body {
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -433,6 +419,7 @@ body {
   0% {
     transform: translate(-50%, -50%) rotate(0deg);
   }
+
   100% {
     transform: translate(-50%, -50%) rotate(360deg);
   }
@@ -442,6 +429,7 @@ body {
   0% {
     transform: translate(-50%, -50%) rotate(360deg);
   }
+
   100% {
     transform: translate(-50%, -50%) rotate(0deg);
   }
@@ -451,6 +439,7 @@ body {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -460,34 +449,41 @@ body {
   0% {
     transform: rotate(360deg);
   }
+
   100% {
     transform: rotate(0deg);
   }
 }
 
 @keyframes chronoNodeBlink {
+
   0%,
   100% {
     opacity: 0.16;
     filter: blur(0.2px);
   }
+
   14% {
     opacity: 0.95;
     filter: blur(0px);
   }
+
   32% {
     opacity: 0.26;
   }
+
   48% {
     opacity: 0.62;
   }
 }
 
 @keyframes washDrift {
+
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(1);
   }
+
   50% {
     transform: translate3d(0, -10px, 0) scale(1.03);
   }
@@ -497,27 +493,32 @@ body {
   0% {
     background-position: 0% 50%;
   }
+
   100% {
     background-position: 100% 50%;
   }
 }
 
 @keyframes orbFloat {
+
   0%,
   100% {
     transform: translate3d(0, 0, 0);
   }
+
   50% {
     transform: translate3d(0, -16px, 0);
   }
 }
 
 @keyframes particleMove {
+
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(0.95);
     opacity: 0.2;
   }
+
   50% {
     transform: translate3d(0, -28px, 0) scale(1.1);
     opacity: 0.8;
@@ -525,11 +526,13 @@ body {
 }
 
 @keyframes particleDriftSlow {
+
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(0.9);
     opacity: 0.15;
   }
+
   50% {
     transform: translate3d(10px, -24px, 0) scale(1.18);
     opacity: 0.45;
@@ -541,6 +544,7 @@ body {
     transform: scale(0.95);
     opacity: 0.85;
   }
+
   100% {
     transform: scale(1.13);
     opacity: 0;
@@ -548,11 +552,13 @@ body {
 }
 
 @keyframes colonPulse {
+
   0%,
   100% {
     opacity: 0.9;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.48;
     transform: scale(0.96);
@@ -560,6 +566,7 @@ body {
 }
 
 @keyframes toastPulse {
+
   0%,
   100% {
     box-shadow:
@@ -567,6 +574,7 @@ body {
       0 0 38px rgba(74, 222, 128, 0.45),
       inset 0 0 20px rgba(74, 222, 128, 0.2);
   }
+
   50% {
     box-shadow:
       0 0 22px rgba(134, 239, 172, 0.62),
@@ -585,5 +593,201 @@ body {
   .chrono-node {
     width: 0.24rem;
     height: 0.24rem;
+  }
+}
+
+/* ── New: Premium Background Canvas ── */
+.premium-bg-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.9;
+}
+
+/* ── Clock Hands (synced to countdown) ── */
+.clock-hand {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  transform-origin: 50% 0%;
+  border-radius: 999px;
+}
+
+.clock-hand-hr {
+  width: 3px;
+  height: min(18vmin, 11rem);
+  background: linear-gradient(180deg, rgba(153, 246, 228, 0.85), rgba(20, 184, 166, 0.15));
+  box-shadow: 0 0 8px rgba(94, 234, 212, 0.4), 0 0 16px rgba(20, 184, 166, 0.2);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clock-hand-min {
+  width: 2px;
+  height: min(24vmin, 16rem);
+  background: linear-gradient(180deg, rgba(103, 232, 249, 0.8), rgba(6, 182, 212, 0.1));
+  box-shadow: 0 0 8px rgba(103, 232, 249, 0.35), 0 0 14px rgba(6, 182, 212, 0.15);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clock-hand-sec {
+  width: 1.5px;
+  height: min(28vmin, 19rem);
+  background: linear-gradient(180deg, rgba(248, 113, 113, 0.9), rgba(239, 68, 68, 0.1));
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.5), 0 0 12px rgba(239, 68, 68, 0.25);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clock-center-dot {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(153, 246, 228, 0.9);
+  box-shadow: 0 0 10px rgba(94, 234, 212, 0.6), 0 0 20px rgba(20, 184, 166, 0.3);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+/* ── Activated Floating Orbs ── */
+.orb-float {
+  animation: orbDrift 8s ease-in-out infinite;
+}
+
+.glow-orb.b.orb-float {
+  animation-delay: -2.5s;
+  animation-duration: 10s;
+}
+
+.glow-orb.c.orb-float {
+  animation-delay: -5s;
+  animation-duration: 12s;
+}
+
+@keyframes orbDrift {
+
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  25% {
+    transform: translate3d(12px, -18px, 0) scale(1.05);
+  }
+
+  50% {
+    transform: translate3d(-8px, -28px, 0) scale(1.1);
+  }
+
+  75% {
+    transform: translate3d(6px, -14px, 0) scale(1.03);
+  }
+}
+
+/* ── Activated Particles ── */
+.particle {
+  animation: particleMove var(--duration) ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+.particle.particle-slow {
+  animation-name: particleDriftSlow;
+  animation-duration: var(--duration);
+  animation-delay: var(--delay);
+}
+
+/* ── Title Breathing Animation ── */
+.title-breathe {
+  animation: titleBreathe 4s ease-in-out infinite;
+  text-shadow:
+    0 0 20px rgba(20, 184, 166, 0.4),
+    0 0 40px rgba(6, 182, 212, 0.2),
+    0 0 60px rgba(20, 184, 166, 0.1);
+}
+
+@keyframes titleBreathe {
+
+  0%,
+  100% {
+    text-shadow:
+      0 0 20px rgba(20, 184, 166, 0.4),
+      0 0 40px rgba(6, 182, 212, 0.2),
+      0 0 60px rgba(20, 184, 166, 0.1);
+    transform: scale(1);
+  }
+
+  50% {
+    text-shadow:
+      0 0 30px rgba(20, 184, 166, 0.6),
+      0 0 60px rgba(6, 182, 212, 0.35),
+      0 0 90px rgba(20, 184, 166, 0.18);
+    transform: scale(1.01);
+  }
+}
+
+/* ── Card Breathing ── */
+.time-card {
+  animation: cardBreathe 5s ease-in-out infinite;
+}
+
+@keyframes cardBreathe {
+
+  0%,
+  100% {
+    box-shadow:
+      0 16px 38px rgba(0, 0, 0, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 0 0 rgba(20, 184, 166, 0);
+  }
+
+  50% {
+    box-shadow:
+      0 16px 38px rgba(0, 0, 0, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 0 25px rgba(20, 184, 166, 0.12),
+      0 0 50px rgba(20, 184, 166, 0.06);
+  }
+}
+
+/* ── Colon Breathing ── */
+.timer-colon {
+  animation: colonBreathe 2s ease-in-out infinite;
+}
+
+@keyframes colonBreathe {
+
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (max-width: 640px) {
+  .clock-hand-hr {
+    height: min(14vmin, 8rem);
+    width: 2px;
+  }
+
+  .clock-hand-min {
+    height: min(18vmin, 11rem);
+    width: 1.5px;
+  }
+
+  .clock-hand-sec {
+    height: min(22vmin, 14rem);
+    width: 1px;
+  }
+
+  .clock-center-dot {
+    width: 6px;
+    height: 6px;
   }
 }
