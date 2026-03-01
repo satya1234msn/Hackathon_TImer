@@ -936,3 +936,40 @@ body {
     transform: translate(2%, -1%);
   }
 }
+
+/* ══════════════════════════════════════════════════
+   5. Portal Edge Glow
+   ══════════════════════════════════════════════════ */
+
+.portal-glow-edge {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  /* Above backgrounds, below text content (z: 10) */
+  pointer-events: none;
+  border: 1px solid rgba(20, 184, 166, 0.05);
+  /* very faint border line */
+  box-shadow:
+    inset 0 0 80px rgba(6, 182, 212, 0.15),
+    inset 0 0 160px rgba(20, 184, 166, 0.08);
+  animation: portalPulse 8s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+
+@keyframes portalPulse {
+  0% {
+    opacity: 0.3;
+    box-shadow:
+      inset 0 0 40px rgba(6, 182, 212, 0.1),
+      inset 0 0 100px rgba(20, 184, 166, 0.05);
+  }
+
+  100% {
+    opacity: 1;
+    box-shadow:
+      inset 0 0 100px rgba(6, 182, 212, 0.25),
+      inset 0 0 220px rgba(20, 184, 166, 0.12),
+      inset 0 0 15px rgba(153, 246, 228, 0.15);
+    /* Tiny hot inner rim */
+  }
+}
