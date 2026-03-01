@@ -119,11 +119,32 @@ export default function TimerPage() {
             }));
         });
 
-        const poll = setInterval(() => {
-            syncFromServer().catch(() => { });
-        }, 3000);
+        // Poll frequently before start (detect when someone starts the timer),
+        // then back way off once running — startedAt never changes and the client
+        // counts time locally, so a 60-second heartbeat is more than enough.
+        const PRE_START_INTERVAL = 3_000;   // 3 s
+        const POST_START_INTERVAL = 60_000;  // 60 s
 
-        return () => clearInterval(poll);
+        let poll = setInterval(() => syncFromServer().catch(() => { }), PRE_START_INTERVAL);
+
+        const switchToSlowPoll = () => {
+            clearInterval(poll);
+            poll = setInterval(() => syncFromServer().catch(() => { }), POST_START_INTERVAL);
+        };
+
+        // Upgrade to slow-poll as soon as we know the timer has started
+        const checker = setInterval(() => {
+            if (state.startedAt !== null) {
+                switchToSlowPoll();
+                clearInterval(checker);
+            }
+        }, 1_000);
+
+        return () => {
+            clearInterval(poll);
+            clearInterval(checker);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [syncFromServer]);
 
     useEffect(() => {
