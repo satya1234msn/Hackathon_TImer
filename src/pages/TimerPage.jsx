@@ -288,7 +288,7 @@ export default function TimerPage() {
                 }}
             ></div>
 
-            <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-6 pb-10 pt-16 text-center sm:pt-20">
+            <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-2 pb-10 pt-16 text-center sm:px-6 sm:pt-20">
                 <header className="mt-2 w-full space-y-3 sm:space-y-4">
                     <h1 className="font-display text-4xl tracking-[0.1em] text-white sm:text-5xl md:text-6xl title-breathe">
                         UDBHAV 2K26
@@ -330,11 +330,11 @@ export default function TimerPage() {
                                     className="timer-row relative z-10 mx-auto flex w-fit items-center justify-center"
                                 >
                                     <TimeBox label="HOURS" value={hours} phaseClass={phaseClass} />
-                                    <span className="timer-colon mb-8 px-1 text-6xl text-slate-100 sm:mb-10 sm:px-2 sm:text-7xl">
+                                    <span className="timer-colon mb-6 px-0.5 text-5xl text-slate-100 sm:mb-8 sm:px-2 sm:text-7xl">
                                         :
                                     </span>
                                     <TimeBox label="MINUTES" value={minutes} phaseClass={phaseClass} />
-                                    <span className="timer-colon mb-8 px-1 text-6xl text-slate-100 sm:mb-10 sm:px-2 sm:text-7xl">
+                                    <span className="timer-colon mb-6 px-0.5 text-5xl text-slate-100 sm:mb-8 sm:px-2 sm:text-7xl">
                                         :
                                     </span>
                                     <TimeBox label="SECONDS" value={seconds} phaseClass={phaseClass} />

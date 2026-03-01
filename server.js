@@ -10,13 +10,21 @@ const DIST_DIR = path.join(__dirname, "dist");
 const DIST_INDEX = path.join(DIST_DIR, "index.html");
 
 function getDefaultState() {
-  return { startedAt: null };
+  // Allow setting start time via environment variable (survives Render restarts)
+  const envStart = process.env.TIMER_STARTED_AT ? Number(process.env.TIMER_STARTED_AT) : null;
+  return { startedAt: envStart };
 }
 
+// In-memory cache so restarts within the same process don't lose state
+let memoryState = null;
+
 function readTimerState() {
+  if (memoryState !== null) return memoryState;
+
   try {
     if (!fs.existsSync(STATE_FILE)) {
-      return getDefaultState();
+      memoryState = getDefaultState();
+      return memoryState;
     }
 
     const raw = fs.readFileSync(STATE_FILE, "utf8");
@@ -27,17 +35,24 @@ function readTimerState() {
       Object.prototype.hasOwnProperty.call(parsed, "startedAt") &&
       (typeof parsed.startedAt === "number" || parsed.startedAt === null)
     ) {
-      return parsed;
+      memoryState = parsed;
+      return memoryState;
     }
   } catch (error) {
     console.error("Failed to read timer state:", error.message);
   }
 
-  return getDefaultState();
+  memoryState = getDefaultState();
+  return memoryState;
 }
 
 function writeTimerState(state) {
-  fs.writeFileSync(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  memoryState = state;
+  try {
+    fs.writeFileSync(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  } catch (error) {
+    console.warn("Could not write timer-state.json (using memory only):", error.message);
+  }
 }
 
 if (!fs.existsSync(STATE_FILE)) {

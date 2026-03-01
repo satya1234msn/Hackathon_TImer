@@ -480,23 +480,16 @@ body {
 
   0%,
   100% {
-    opacity: 0.21;
-    filter: blur(0.2px);
+    opacity: 0.18;
+    filter: blur(0.3px);
   }
 
-  14% {
-    opacity: 1.0;
+  50% {
+    opacity: 0.85;
     filter: blur(0px);
   }
-
-  32% {
-    opacity: 0.31;
-  }
-
-  48% {
-    opacity: 0.67;
-  }
 }
+
 
 @keyframes washDrift {
 
@@ -609,6 +602,30 @@ body {
     gap: 0.5rem;
   }
 }
+
+@media (max-width: 419px) {
+  .timer-row {
+    transform: scale(0.72);
+    transform-origin: center top;
+  }
+
+  /* Collapse the space the scaled row would normally take */
+  .timer-wrap {
+    height: 18rem;
+  }
+}
+
+@media (min-width: 420px) and (max-width: 639px) {
+  .timer-row {
+    transform: scale(0.88);
+    transform-origin: center top;
+  }
+
+  .timer-wrap {
+    height: 20rem;
+  }
+}
+
 
 @media (max-width: 640px) {
   .chrono-node {
