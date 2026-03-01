@@ -40,19 +40,26 @@ if (fs.existsSync(DIST_INDEX)) {
   app.use(express.static(DIST_DIR));
 }
 
+// ── Request counter (resets on each process restart)
+let requestCount = 0;
+
 // ── API Routes ──────────────────────────────────────────────────────────────
 app.get("/api/timer-state", (req, res) => {
-  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now() });
+  requestCount++;
+  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now(), _pid: process.pid, _req: requestCount });
 });
 
 app.post("/api/start", (req, res) => {
+  requestCount++;
+  // Unconditionally set — no condition check, rules out any logic bug
   if (startedAt === null) {
     startedAt = Date.now();
     saveState();
-    console.log("Timer started at:", startedAt);
   }
-  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now() });
+  console.log(`[/api/start] pid=${process.pid} startedAt=${startedAt} req#${requestCount}`);
+  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now(), _pid: process.pid, _req: requestCount });
 });
+
 
 app.post("/api/reset", (req, res) => {
   startedAt = null;
