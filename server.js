@@ -10,20 +10,24 @@ const DIST_DIR = path.join(__dirname, "dist");
 const DIST_INDEX = path.join(DIST_DIR, "index.html");
 
 // ── Simple module-level state ───────────────────────────────────────────────
-// Use TIMER_STARTED_AT env var as a permanent fallback (survives restarts)
-let startedAt = process.env.TIMER_STARTED_AT ? Number(process.env.TIMER_STARTED_AT) : null;
+// Guard against NaN: Number("null") and Number("undefined") return NaN
+const _envTs = Number(process.env.TIMER_STARTED_AT);
+let startedAt = (process.env.TIMER_STARTED_AT && Number.isFinite(_envTs) && _envTs > 0)
+  ? _envTs
+  : null;
 
 // Try to restore from file on startup
 try {
   if (fs.existsSync(STATE_FILE)) {
     const saved = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-    if (typeof saved.startedAt === "number") {
+    if (typeof saved.startedAt === "number" && Number.isFinite(saved.startedAt)) {
       startedAt = saved.startedAt;
     }
   }
 } catch (err) {
   console.warn("Could not read timer-state.json on startup:", err.message);
 }
+console.log(`[startup] TIMER_STARTED_AT env=${process.env.TIMER_STARTED_AT} → startedAt=${startedAt}`);
 
 function saveState() {
   try {
@@ -40,24 +44,19 @@ if (fs.existsSync(DIST_INDEX)) {
   app.use(express.static(DIST_DIR));
 }
 
-// ── Request counter (resets on each process restart)
-let requestCount = 0;
-
 // ── API Routes ──────────────────────────────────────────────────────────────
 app.get("/api/timer-state", (req, res) => {
-  requestCount++;
-  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now(), _pid: process.pid, _req: requestCount });
+  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now() });
 });
 
 app.post("/api/start", (req, res) => {
-  requestCount++;
-  // Unconditionally set — no condition check, rules out any logic bug
-  if (startedAt === null) {
+  // Guard against null AND NaN (from bad TIMER_STARTED_AT env var)
+  if (startedAt === null || !Number.isFinite(startedAt)) {
     startedAt = Date.now();
     saveState();
+    console.log(`[/api/start] Timer started at ${startedAt}`);
   }
-  console.log(`[/api/start] pid=${process.pid} startedAt=${startedAt} req#${requestCount}`);
-  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now(), _pid: process.pid, _req: requestCount });
+  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now() });
 });
 
 
