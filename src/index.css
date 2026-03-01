@@ -217,7 +217,7 @@ body {
     0 0 9px rgba(94, 234, 212, 0.5),
     0 0 18px rgba(34, 211, 238, 0.25);
   transform: rotate(var(--angle)) translateY(calc(-1 * var(--node-radius)));
-  opacity: 0.25;
+  opacity: 0.30;
   animation: chronoNodeBlink 6.2s linear infinite;
   animation-delay: var(--node-delay);
 }
@@ -480,21 +480,21 @@ body {
 
   0%,
   100% {
-    opacity: 0.16;
+    opacity: 0.21;
     filter: blur(0.2px);
   }
 
   14% {
-    opacity: 0.95;
+    opacity: 1.0;
     filter: blur(0px);
   }
 
   32% {
-    opacity: 0.26;
+    opacity: 0.31;
   }
 
   48% {
-    opacity: 0.62;
+    opacity: 0.67;
   }
 }
 
@@ -1009,4 +1009,46 @@ body {
 
 .animate-scale-breath {
   animation: scale-breath 15s ease-in-out infinite;
+}
+
+/* --- Atmospheric Radial Breathing Glow --- */
+.radial-breathing-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140%;
+  height: 180%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(80px);
+  animation: radialBreathing 8s ease-in-out infinite;
+  opacity: 0.35;
+}
+
+.glow-green {
+  background: radial-gradient(circle, rgba(0, 255, 209, 0.3) 0%, transparent 70%);
+}
+
+.glow-yellow {
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+}
+
+.glow-red {
+  background: radial-gradient(circle, rgba(255, 0, 60, 0.35) 0%, transparent 70%);
+}
+
+@keyframes radialBreathing {
+
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0.25;
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 0.55;
+  }
 }

@@ -145,6 +145,13 @@ export default function TimerPage() {
                 ? "phase-yellow"
                 : "phase-red";
 
+    const glowColorClass =
+        indicatorColor === "green"
+            ? "glow-green"
+            : indicatorColor === "yellow"
+                ? "glow-yellow"
+                : "glow-red";
+
     async function handleStart() {
         if (isStarting || hasStarted) return;
         setIsStarting(true);
@@ -312,8 +319,11 @@ export default function TimerPage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -18 }}
                                 transition={{ duration: 0.42, ease: "easeOut" }}
-                                className="timer-wrap"
+                                className="timer-wrap relative w-full"
                             >
+                                {/* ── Soft Radial Breathing Glow ── */}
+                                <div className={`radial-breathing-glow ${glowColorClass}`} aria-hidden="true"></div>
+
                                 <div
                                     role="timer"
                                     aria-live="polite"
@@ -334,7 +344,7 @@ export default function TimerPage() {
                     </AnimatePresence>
 
                     <div
-                        className={`overflow-hidden transition-all duration-700 ease-out ${hasStarted || isStarting ? "mt-0 max-h-0 opacity-0" : "mt-7 max-h-36 opacity-100"
+                        className={`overflow-hidden transition-all duration-700 ease-out ${hasStarted || isStarting ? "mt-0 max-h-0 opacity-0" : "mt-12 max-h-36 opacity-100"
                             }`}
                     >
                         <button
