@@ -126,6 +126,9 @@ export default function TimerPage() {
         state.startedAt === null ? state.durationMs : Math.max(0, state.durationMs - elapsedMs);
     const { hours, minutes, seconds } = useMemo(() => getTimeParts(remainingMs), [remainingMs]);
 
+    // Calculate normalized progress from 0.0 (start) to 1.0 (deadline)
+    const progress = Math.max(0, Math.min(1, 1 - (remainingMs / (state.durationMs || 1))));
+
     // Clock hand angles derived from remaining time
     const totalSec = Math.max(0, Math.ceil(remainingMs / 1000));
     const secAngle = ((60 - (totalSec % 60)) % 60) * 6;
@@ -178,87 +181,105 @@ export default function TimerPage() {
 
     return (
         <div className="relative min-h-screen overflow-hidden text-slate-100">
-            <div className="bg-gradient-animated absolute inset-0" aria-hidden="true"></div>
-            <div className="bg-theme-wash absolute inset-0" aria-hidden="true"></div>
-            <div className="bg-theme-sheen absolute inset-0" aria-hidden="true"></div>
+            {/* ── Dynamic Compression Wrapper ── */}
+            <div
+                className="absolute inset-0 pointer-events-none transition-transform duration-1000 ease-linear"
+                style={{ transform: `scale(${1.06 - 0.06 * progress})` }}
+                aria-hidden="true"
+            >
+                <div className="absolute inset-0 h-full w-full animate-scale-breath">
+                    <div className="bg-gradient-animated absolute inset-0" aria-hidden="true"></div>
+                    <div className="bg-theme-wash absolute inset-0" aria-hidden="true"></div>
+                    <div className="bg-theme-sheen absolute inset-0" aria-hidden="true"></div>
 
-            {/* ── Conceptual Visuals (Neural Net + Gravity Grid) ── */}
-            <NeuralNetCanvas />
-            <GravityGridCanvas />
-            <CosmicDustCanvas />
-            <FallingSandCanvas />
+                    {/* ── Conceptual Visuals (Neural Net + Gravity Grid) ── */}
+                    <NeuralNetCanvas />
+                    <GravityGridCanvas />
+                    <CosmicDustCanvas />
+                    <FallingSandCanvas />
 
-            {/* ── Original Premium animated background (gradient orbs + scanner) ── */}
-            <PremiumBgCanvas />
+                    {/* ── Original Premium animated background (gradient orbs + scanner) ── */}
+                    <PremiumBgCanvas />
 
-            {/* ── Immersive Portal Edge Glow ── */}
-            <div className="portal-glow-edge" aria-hidden="true"></div>
+                    {/* ── Immersive Portal Edge Glow ── */}
+                    <div className="portal-glow-edge" aria-hidden="true"></div>
 
-            {/* ── Focus Light from Behind + Depth Blur ── */}
-            <div className="focus-light" aria-hidden="true"></div>
-            <div className="depth-blur-far" aria-hidden="true"></div>
-            <div className="depth-blur-near" aria-hidden="true"></div>
+                    {/* ── Focus Light from Behind + Depth Blur ── */}
+                    <div className="focus-light" aria-hidden="true"></div>
+                    <div className="depth-blur-far" aria-hidden="true"></div>
+                    <div className="depth-blur-near" aria-hidden="true"></div>
 
-            {/* ── Ambient Glow Pulse ── */}
-            <div className="ambient-glow-pulse" aria-hidden="true"></div>
+                    {/* ── Ambient Glow Pulse ── */}
+                    <div className="ambient-glow-pulse" aria-hidden="true"></div>
 
-            {/* ── Very Light Grain Overlay ── */}
-            <div className="grain-overlay" aria-hidden="true"></div>
+                    {/* ── Very Light Grain Overlay ── */}
+                    <div className="grain-overlay" aria-hidden="true"></div>
 
-            <div className="glow-orb a orb-float" aria-hidden="true"></div>
-            <div className="glow-orb b orb-float" aria-hidden="true"></div>
-            <div className="glow-orb c orb-float" aria-hidden="true"></div>
+                    <div className="glow-orb a orb-float" aria-hidden="true"></div>
+                    <div className="glow-orb b orb-float" aria-hidden="true"></div>
+                    <div className="glow-orb c orb-float" aria-hidden="true"></div>
 
-            <div className="chrono-bg" aria-hidden="true">
-                <div className="chrono-ring ring-outer"></div>
-                <div className="chrono-ring ring-inner"></div>
-                <div className="chrono-sweep sweep-a"></div>
-                <div className="chrono-sweep sweep-b"></div>
+                    <div className="chrono-bg" aria-hidden="true">
+                        <div className="chrono-ring ring-outer"></div>
+                        <div className="chrono-ring ring-inner"></div>
+                        <div className="chrono-sweep sweep-a"></div>
+                        <div className="chrono-sweep sweep-b"></div>
 
-                {chronoNodes.map((node) => (
-                    <span
-                        key={`chrono-${node.id}`}
-                        className="chrono-node"
-                        style={{
-                            "--angle": `${node.angle}deg`,
-                            "--node-delay": `${node.delay}s`,
-                            "--node-radius": node.radius
-                        }}
-                    ></span>
-                ))}
+                        {chronoNodes.map((node) => (
+                            <span
+                                key={`chrono-${node.id}`}
+                                className="chrono-node"
+                                style={{
+                                    "--angle": `${node.angle}deg`,
+                                    "--node-delay": `${node.delay}s`,
+                                    "--node-radius": node.radius
+                                }}
+                            ></span>
+                        ))}
+                    </div>
+
+                    {particles.map((particle) => (
+                        <span
+                            key={particle.id}
+                            className="particle"
+                            style={{
+                                left: `${particle.left}%`,
+                                top: `${particle.top}%`,
+                                width: `${particle.size}px`,
+                                height: `${particle.size}px`,
+                                "--duration": `${particle.duration}s`,
+                                "--delay": `${particle.delay}s`
+                            }}
+                            aria-hidden="true"
+                        ></span>
+                    ))}
+
+                    {floatingParticles.map((particle) => (
+                        <span
+                            key={`f-${particle.id}`}
+                            className="particle particle-slow"
+                            style={{
+                                left: `${particle.left}%`,
+                                top: `${particle.top}%`,
+                                width: `${particle.size}px`,
+                                height: `${particle.size}px`,
+                                "--duration": `${particle.duration}s`,
+                                "--delay": `${particle.delay}s`
+                            }}
+                            aria-hidden="true"
+                        ></span>
+                    ))}
+                </div>
             </div>
 
-            {particles.map((particle) => (
-                <span
-                    key={particle.id}
-                    className="particle"
-                    style={{
-                        left: `${particle.left}%`,
-                        top: `${particle.top}%`,
-                        width: `${particle.size}px`,
-                        height: `${particle.size}px`,
-                        "--duration": `${particle.duration}s`,
-                        "--delay": `${particle.delay}s`
-                    }}
-                    aria-hidden="true"
-                ></span>
-            ))}
-
-            {floatingParticles.map((particle) => (
-                <span
-                    key={`f-${particle.id}`}
-                    className="particle particle-slow"
-                    style={{
-                        left: `${particle.left}%`,
-                        top: `${particle.top}%`,
-                        width: `${particle.size}px`,
-                        height: `${particle.size}px`,
-                        "--duration": `${particle.duration}s`,
-                        "--delay": `${particle.delay}s`
-                    }}
-                    aria-hidden="true"
-                ></span>
-            ))}
+            {/* ── Dynamic Vignette Overlay ── */}
+            <div
+                className="absolute inset-0 pointer-events-none transition-all duration-1000 ease-linear"
+                aria-hidden="true"
+                style={{
+                    background: `radial-gradient(circle at center, transparent ${85 - 45 * progress}%, rgba(0, 0, 0, ${0.4 + 0.5 * progress}) 150%)`
+                }}
+            ></div>
 
             <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-6 pb-10 pt-16 text-center sm:pt-20">
                 <header className="mt-2 w-full space-y-3 sm:space-y-4">

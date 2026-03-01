@@ -261,29 +261,50 @@ body {
 
 .phase-green {
   border-color: rgba(134, 239, 172, 0.32);
-  background: linear-gradient(145deg, rgba(134, 239, 172, 0.09), rgba(8, 11, 20, 0.5));
+  background: linear-gradient(145deg, rgba(134, 239, 172, 0.15), rgba(8, 11, 20, 0.6));
   box-shadow:
-    0 16px 38px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 0 22px rgba(74, 222, 128, 0.12);
+    0 16px 38px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 28px rgba(74, 222, 128, 0.2);
+}
+
+.phase-green .timer-digits {
+  text-shadow:
+    0 0 12px rgba(74, 222, 128, 0.42),
+    0 0 22px rgba(134, 239, 172, 0.18);
 }
 
 .phase-yellow {
-  border-color: rgba(253, 186, 116, 0.34);
+  border-color: rgba(253, 186, 116, 0.25);
   background: linear-gradient(145deg, rgba(253, 186, 116, 0.1), rgba(8, 11, 20, 0.5));
   box-shadow:
-    0 16px 38px rgba(0, 0, 0, 0.34),
+    0 16px 38px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 0 22px rgba(251, 146, 60, 0.12);
+    inset 0 0 18px rgba(251, 146, 60, 0.12);
+}
+
+.phase-yellow .timer-digits {
+  color: #fff7ed;
+  text-shadow:
+    0 0 8px rgba(251, 146, 60, 0.35),
+    0 0 16px rgba(253, 186, 116, 0.15);
 }
 
 .phase-red {
-  border-color: rgba(252, 165, 165, 0.34);
-  background: linear-gradient(145deg, rgba(252, 165, 165, 0.1), rgba(8, 11, 20, 0.5));
+  border-color: rgba(252, 165, 165, 0.3);
+  background: linear-gradient(145deg, rgba(252, 165, 165, 0.12), rgba(8, 11, 20, 0.55));
   box-shadow:
-    0 16px 38px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 0 22px rgba(248, 113, 113, 0.12);
+    0 16px 38px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 22px rgba(248, 113, 113, 0.18);
+}
+
+.phase-red .timer-digits {
+  color: #fef2f2;
+  text-shadow:
+    0 0 10px rgba(248, 113, 113, 0.4),
+    0 0 20px rgba(239, 68, 68, 0.2),
+    0 0 35px rgba(220, 38, 38, 0.1);
 }
 
 .timer-digits {
@@ -972,4 +993,20 @@ body {
       inset 0 0 15px rgba(153, 246, 228, 0.15);
     /* Tiny hot inner rim */
   }
+}
+
+@keyframes scale-breath {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.animate-scale-breath {
+  animation: scale-breath 15s ease-in-out infinite;
 }

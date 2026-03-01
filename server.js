@@ -74,6 +74,31 @@ app.post("/api/start", (req, res) => {
   });
 });
 
+// --- TESTING API ENDPOINTS ---
+app.post("/api/test/14hr", (req, res) => {
+  const state = readTimerState();
+  // Set elapsed time exactly to 10 hours so 14 hours remain
+  state.startedAt = Date.now() - (10 * 3600 * 1000);
+  writeTimerState(state);
+  res.json({ success: true, remainingHours: 14 });
+});
+
+app.post("/api/test/4hr", (req, res) => {
+  const state = readTimerState();
+  // Set elapsed to 20 hours so exactly 4 hours remain
+  state.startedAt = Date.now() - (20 * 3600 * 1000);
+  writeTimerState(state);
+  res.json({ success: true, remainingHours: 4 });
+});
+
+app.post("/api/test/2min", (req, res) => {
+  const state = readTimerState();
+  // Set elapsed to 23 hours and 58 minutes so exactly 2 minutes remain
+  state.startedAt = Date.now() - (23 * 3600 * 1000) - (58 * 60 * 1000);
+  writeTimerState(state);
+  res.json({ success: true, remainingMinutes: 2 });
+});
+
 app.get("*", (req, res) => {
   if (req.path.startsWith("/api/")) {
     res.status(404).json({ error: "Not found" });
