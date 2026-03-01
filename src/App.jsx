@@ -23,6 +23,174 @@ function getIndicatorColor(remainingMs) {
   return "green";
 }
 
+/* ── Neural Network Canvas (Intelligent, Conceptual, Very Slow) ── */
+function NeuralNetCanvas() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let animId;
+    let t = 0;
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Create very slow drifting nodes
+    const numNodes = Math.min(65, window.innerWidth / 18);
+    const nodes = Array.from({ length: numNodes }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      vx: (Math.random() - 0.5) * 0.09, // Extremely slow horizontal movement
+      vy: (Math.random() - 0.5) * 0.09, // Extremely slow vertical movement
+      r: Math.random() * 1.5 + 0.5
+    }));
+
+    function draw() {
+      const w = canvas.width;
+      const h = canvas.height;
+      t += 0.01;
+
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.fillStyle = "rgba(103, 232, 249, 0.45)"; // Faint cyan dots
+      for (const node of nodes) {
+        node.x += node.vx;
+        node.y += node.vy;
+
+        // Wrap around gracefully
+        if (node.x < 0) node.x = w;
+        if (node.x > w) node.x = 0;
+        if (node.y < 0) node.y = h;
+        if (node.y > h) node.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw synaptic connections if nodes are close
+      ctx.lineWidth = 0.6;
+      const maxDist = 160;
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < maxDist) {
+            const opacity = (1 - dist / maxDist) * 0.18; // Very faint lines
+            ctx.strokeStyle = `rgba(153, 246, 228, ${opacity})`;
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      animId = requestAnimationFrame(draw);
+    }
+    draw();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animId);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 z-[1] pointer-events-none mix-blend-screen opacity-50" aria-hidden="true" />;
+}
+
+/* ── Gravity Grid Canvas (Time/Space distortion bending towards center) ── */
+function GravityGridCanvas() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let animId;
+    let t = 0;
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    function draw() {
+      const w = canvas.width;
+      const h = canvas.height;
+      t += 0.003; // Incredibly slow time evolution
+
+      ctx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const cell = 55; // Grid cell size
+      const maxPullDist = Math.min(w, h) * 0.75; // Gravity well size
+
+      ctx.strokeStyle = "rgba(20, 184, 166, 0.055)"; // Very faint teal grid
+      ctx.lineWidth = 1;
+
+      // Apply gravitational distortion to a point
+      function distort(x, y) {
+        const dx = x - cx;
+        const dy = y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > 0 && dist < maxPullDist) {
+          const strength = Math.pow(1 - dist / maxPullDist, 1.8) * 110;
+          // Very slow breathing effect to the gravity
+          const pulse = 1 + Math.sin(t * 1.5 - dist * 0.003) * 0.12;
+          const pull = (strength / dist) * pulse;
+          return { x: x - dx * pull, y: y - dy * pull };
+        }
+        return { x, y };
+      }
+
+      // Vertical lines
+      for (let x = 0; x <= w; x += cell) {
+        ctx.beginPath();
+        for (let y = 0; y <= h; y += 10) { // Subdivide for smooth curves
+          const p = distort(x, y);
+          if (y === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+      }
+
+      // Horizontal lines
+      for (let y = 0; y <= h; y += cell) {
+        ctx.beginPath();
+        for (let x = 0; x <= w; x += 10) { // Subdivide for smooth curves
+          const p = distort(x, y);
+          if (x === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+      }
+
+      animId = requestAnimationFrame(draw);
+    }
+    draw();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animId);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 z-[1] pointer-events-none mix-blend-screen opacity-90" aria-hidden="true" />;
+}
+
 /* ── Premium Background Animation Canvas ── */
 function PremiumBgCanvas() {
   const canvasRef = useRef(null);
@@ -72,34 +240,7 @@ function PremiumBgCanvas() {
         ctx.fillStyle = grad;
         ctx.fill();
       }
-
-      // Tech grid
-      ctx.strokeStyle = "rgba(20, 184, 166, 0.035)";
-      ctx.lineWidth = 1;
-      const gridSize = 60;
-      for (let x = 0; x < w; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
-      }
-      for (let y = 0; y < h; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
-      }
-
-      // Grid intersection dots — pulse subtly
-      const dotAlpha = 0.05 + Math.sin(t * 0.02) * 0.025;
-      ctx.fillStyle = `rgba(20, 184, 166, ${dotAlpha})`;
-      for (let x = 0; x < w; x += gridSize) {
-        for (let y = 0; y < h; y += gridSize) {
-          ctx.beginPath();
-          ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
+      // Removed old tech grid to make way for the GravityGrid
 
       // Horizontal scanner line
       const scanY = (t * 0.4) % h;
@@ -298,8 +439,23 @@ export default function App() {
       <div className="bg-theme-wash absolute inset-0" aria-hidden="true"></div>
       <div className="bg-theme-sheen absolute inset-0" aria-hidden="true"></div>
 
-      {/* ── New: Premium animated background (gradient orbs + tech grid + scanner) ── */}
+      {/* ── Conceptual Visuals (Neural Net + Gravity Grid) ── */}
+      <NeuralNetCanvas />
+      <GravityGridCanvas />
+
+      {/* ── Original Premium animated background (gradient orbs + scanner) ── */}
       <PremiumBgCanvas />
+
+      {/* ── Focus Light from Behind + Depth Blur ── */}
+      <div className="focus-light" aria-hidden="true"></div>
+      <div className="depth-blur-far" aria-hidden="true"></div>
+      <div className="depth-blur-near" aria-hidden="true"></div>
+
+      {/* ── Ambient Glow Pulse ── */}
+      <div className="ambient-glow-pulse" aria-hidden="true"></div>
+
+      {/* ── Very Light Grain Overlay ── */}
+      <div className="grain-overlay" aria-hidden="true"></div>
 
       <div className="glow-orb a orb-float" aria-hidden="true"></div>
       <div className="glow-orb b orb-float" aria-hidden="true"></div>
