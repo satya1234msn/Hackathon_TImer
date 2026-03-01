@@ -5,6 +5,7 @@ import GravityGridCanvas from "../components/backgrounds/GravityGridCanvas";
 import CosmicDustCanvas from "../components/backgrounds/CosmicDustCanvas";
 import FallingSandCanvas from "../components/backgrounds/FallingSandCanvas";
 import PremiumBgCanvas from "../components/backgrounds/PremiumBgCanvas";
+import CelebrationCanvas from "../components/backgrounds/CelebrationCanvas";
 import TimeBox from "../components/ui/TimeBox";
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -188,7 +189,9 @@ export default function TimerPage() {
 
     return (
         <div className="relative min-h-screen overflow-hidden text-slate-100">
-            {/* ── Dynamic Compression Wrapper ── */}
+            {/* ── Celebration Canvas (fires on finish) ── */}
+            <CelebrationCanvas active={finished} />
+
             <div
                 className="absolute inset-0 pointer-events-none transition-transform duration-1000 ease-linear"
                 style={{ transform: `scale(${1.06 - 0.06 * progress})` }}
@@ -303,16 +306,26 @@ export default function TimerPage() {
                         {finished ? (
                             <motion.div
                                 key="times-up"
-                                initial={{ opacity: 0, scale: 0.85, y: 14 }}
+                                initial={{ opacity: 0, scale: 0.7, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 1.08 }}
-                                transition={{ duration: 0.62, ease: [0.16, 1, 0.3, 1] }}
-                                className="times-up-popup relative mx-auto w-fit rounded-2xl border border-red-400/55 bg-red-500/10 px-7 py-5 sm:px-10 sm:py-7"
+                                exit={{ opacity: 0, scale: 1.05 }}
+                                transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                                className="times-up-card relative mx-auto w-fit rounded-2xl px-10 py-8 sm:px-16 sm:py-10 text-center"
                             >
-                                <div className="times-up-rings" aria-hidden="true"></div>
-                                <p className="times-up text-4xl text-red-200 sm:text-5xl">Time&apos;s Up!</p>
+                                <p className="times-up text-4xl sm:text-5xl md:text-6xl">
+                                    Time&apos;s Up!
+                                </p>
+                                <motion.p
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3, duration: 0.4, ease: "easeOut" }}
+                                    className="times-up-sub mt-3 text-sm tracking-[0.22em] uppercase sm:text-base"
+                                >
+                                    24 Hours Complete
+                                </motion.p>
                             </motion.div>
                         ) : (
+
                             <motion.div
                                 key="timer"
                                 initial={{ opacity: 0, y: 18 }}

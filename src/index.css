@@ -1069,3 +1069,30 @@ body {
     opacity: 0.55;
   }
 }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TIMES UP — CLEAN GREEN CARD
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.times-up-card {
+  background: linear-gradient(145deg, rgba(5, 30, 15, 0.92), rgba(8, 22, 12, 0.88));
+  border: 1.5px solid rgba(74, 222, 128, 0.35);
+  box-shadow:
+    0 0 22px rgba(74, 222, 128, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+}
+
+.times-up {
+  font-family: "Orbitron", sans-serif;
+  font-weight: 800;
+  color: #86efac;
+  text-shadow: 0 0 18px rgba(74, 222, 128, 0.3);
+}
+
+.times-up-sub {
+  color: rgba(134, 239, 172, 0.55);
+  font-family: "Inter", sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+}
