@@ -11,7 +11,9 @@ import TimeBox from "../components/ui/TimeBox";
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
 function getTimeParts(remainingMs) {
-    const totalSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+    // Math.floor is stable: digit only changes when a full second boundary is crossed
+    // Math.ceil would bounce on tiny remainingMs fluctuations
+    const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
@@ -79,12 +81,19 @@ export default function TimerPage() {
     );
 
     const syncFromServer = useCallback(async () => {
+        const reqStart = Date.now();
         const response = await fetch("/api/timer-state");
         if (!response.ok) {
             throw new Error(`Timer sync failed with status ${response.status}`);
         }
-
+        const reqEnd = Date.now();
         const payload = await response.json();
+
+        // Use request midpoint to account for network RTT, then smooth with 70/30 avg
+        const rawOffset = typeof payload.now === "number"
+            ? payload.now - Math.round((reqStart + reqEnd) / 2)
+            : null;
+
         setState((prev) => ({
             ...prev,
             startedAt:
@@ -92,7 +101,10 @@ export default function TimerPage() {
                     ? payload.startedAt
                     : prev.startedAt,
             durationMs: typeof payload.durationMs === "number" ? payload.durationMs : prev.durationMs,
-            serverOffsetMs: typeof payload.now === "number" ? payload.now - Date.now() : prev.serverOffsetMs,
+            // Smooth: blend previous offset 70% + new 30% to dampen jitter
+            serverOffsetMs: rawOffset !== null
+                ? Math.round(prev.serverOffsetMs * 0.7 + rawOffset * 0.3)
+                : prev.serverOffsetMs,
             loading: false,
             error: ""
         }));
