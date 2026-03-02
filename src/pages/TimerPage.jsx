@@ -276,6 +276,8 @@ export default function TimerPage() {
     const minAngle = ((60 - (Math.floor(totalSec / 60) % 60)) % 60) * 6;
     const hrAngle = ((24 - (Math.floor(totalSec / 3600) % 24)) % 24) * 15;
     const hasStarted = state.startedAt !== null;
+    // Defensive check: if elapsed time is >= 24 hours and started, show finished
+    // But prevent false positives from bad state by checking if remainingMs is very low
     const finished = hasStarted && remainingMs <= 0;
     const indicatorColor = getIndicatorColor(remainingMs);
 

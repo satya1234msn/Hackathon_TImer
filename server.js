@@ -27,6 +27,24 @@ function isValidTimestamp(ts) {
   );
 }
 
+// ── Load state from file (safe to call multiple times) ────────────────────────
+function loadStateFromFile() {
+  try {
+    if (fs.existsSync(STATE_FILE)) {
+      const saved = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+      if (saved.startedAt === null || isValidTimestamp(saved.startedAt)) {
+        return saved.startedAt;
+      } else {
+        console.warn(`[loadStateFromFile] Invalid state in file: startedAt=${saved.startedAt}`);
+        return null;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not read timer-state.json:", err.message);
+  }
+  return null;
+}
+
 // ── Module-level state ─────────────────────────────────────────────────────
 // Guard against NaN: Number("null") and Number("undefined") return NaN
 const _envTs = Number(process.env.TIMER_STARTED_AT);
@@ -35,18 +53,9 @@ let startedAt = (process.env.TIMER_STARTED_AT && Number.isFinite(_envTs) && _env
   : null;
 
 // Try to restore from file on startup
-try {
-  if (fs.existsSync(STATE_FILE)) {
-    const saved = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-    if (isValidTimestamp(saved.startedAt)) {
-      startedAt = saved.startedAt;
-      console.log(`[startup] Restored timer state: startedAt=${startedAt}`);
-    } else if (saved.startedAt !== null) {
-      console.warn(`[startup] Invalid state in file: startedAt=${saved.startedAt}`);
-    }
-  }
-} catch (err) {
-  console.warn("Could not read timer-state.json on startup:", err.message);
+const fileState = loadStateFromFile();
+if (fileState !== null) {
+  startedAt = fileState;
 }
 
 if (startedAt !== null && !isValidTimestamp(startedAt)) {
@@ -73,6 +82,9 @@ if (fs.existsSync(DIST_INDEX)) {
 
 // ── API Routes ──────────────────────────────────────────────────────────────
 app.get("/api/timer-state", (req, res) => {
+  // Reload from file to ensure we're always in sync (ALWAYS, not conditionally)
+  startedAt = loadStateFromFile();
+
   // Return precise server-side calculations to eliminate client-side clock skew
   const serverNow = Date.now();
   const elapsedMs = startedAt === null ? 0 : Math.max(0, serverNow - startedAt);
@@ -90,6 +102,9 @@ app.get("/api/timer-state", (req, res) => {
 });
 
 app.post("/api/start", (req, res) => {
+  // Reload from file first to always stay in sync
+  startedAt = loadStateFromFile();
+
   // Prevent race conditions: only start if not already started
   if (startedAt === null || !Number.isFinite(startedAt)) {
     startedAt = Date.now();
@@ -116,6 +131,9 @@ app.post("/api/start", (req, res) => {
 
 
 app.post("/api/reset", (req, res) => {
+  // Reload from file first to ensure consistency
+  startedAt = loadStateFromFile();
+
   const wasStarted = startedAt !== null;
   startedAt = null;
   saveState();
@@ -135,6 +153,9 @@ app.post("/api/reset", (req, res) => {
 
 // ── Diagnostic endpoint (for debugging clock skew issues) ────────────────────
 app.get("/api/debug/timer", (req, res) => {
+  // Reload from file to always stay in sync
+  startedAt = loadStateFromFile();
+
   const serverNow = Date.now();
   const elapsedMs = startedAt === null ? 0 : Math.max(0, serverNow - startedAt);
   const remainingMs = startedAt === null ? DURATION_MS : Math.max(0, DURATION_MS - elapsedMs);
@@ -162,21 +183,27 @@ app.post("/api/test/14hr", (req, res) => {
   startedAt = Date.now() - 10 * 3600 * 1000;
   saveState();
   const serverNow = Date.now();
-  res.json({ success: true, remainingHours: 14, startedAt, now: serverNow, version: 2 });
+  const elapsedMs = Math.max(0, serverNow - startedAt);
+  const remainingMs = Math.max(0, DURATION_MS - elapsedMs);
+  res.json({ success: true, remainingHours: 14, startedAt, elapsedMs, remainingMs, now: serverNow, version: 3 });
 });
 
 app.post("/api/test/4hr", (req, res) => {
   startedAt = Date.now() - 20 * 3600 * 1000;
   saveState();
   const serverNow = Date.now();
-  res.json({ success: true, remainingHours: 4, startedAt, now: serverNow, version: 2 });
+  const elapsedMs = Math.max(0, serverNow - startedAt);
+  const remainingMs = Math.max(0, DURATION_MS - elapsedMs);
+  res.json({ success: true, remainingHours: 4, startedAt, elapsedMs, remainingMs, now: serverNow, version: 3 });
 });
 
 app.post("/api/test/2min", (req, res) => {
   startedAt = Date.now() - 23 * 3600 * 1000 - 58 * 60 * 1000;
   saveState();
   const serverNow = Date.now();
-  res.json({ success: true, remainingMinutes: 2, startedAt, now: serverNow, version: 2 });
+  const elapsedMs = Math.max(0, serverNow - startedAt);
+  const remainingMs = Math.max(0, DURATION_MS - elapsedMs);
+  res.json({ success: true, remainingMinutes: 2, startedAt, elapsedMs, remainingMs, now: serverNow, version: 3 });
 });
 
 // ── SPA fallback ────────────────────────────────────────────────────────────
