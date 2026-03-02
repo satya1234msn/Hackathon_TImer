@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import NeuralNetCanvas from "../components/backgrounds/NeuralNetCanvas";
 import GravityGridCanvas from "../components/backgrounds/GravityGridCanvas";
@@ -9,6 +9,10 @@ import CelebrationCanvas from "../components/backgrounds/CelebrationCanvas";
 import TimeBox from "../components/ui/TimeBox";
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+// ── Clock Skew Detection Constants ────────────────────────────────────────
+const CLOCK_SKEW_THRESHOLD = 5000; // 5 seconds
+const MAX_CLOCK_SKEW_SAMPLES = 10;
 
 function getTimeParts(remainingMs) {
     // Math.floor is stable: digit only changes when a full second boundary is crossed
@@ -37,11 +41,26 @@ export default function TimerPage() {
         startedAt: null,
         durationMs: TWENTY_FOUR_HOURS_MS,
         serverOffsetMs: 0,
+        serverElapsedMs: 0,      // ← Server-calculated elapsed time
+        serverRemainingMs: TWENTY_FOUR_HOURS_MS, // ← Server-calculated remaining time
         loading: true,
-        error: ""
+        error: "",
+        lastSyncTime: null,
+        clockSkewWarning: false
     });
+
     const [clockNow, setClockNow] = useState(Date.now());
     const [isStarting, setIsStarting] = useState(false);
+
+    // ── Retry logic with exponential backoff ──────────────────────────────
+    const retryStateRef = useRef({
+        failureCount: 0,
+        nextRetryTime: Date.now(),
+        maxRetries: 8
+    });
+
+    // ── Clock skew detection samples ─────────────────────────────────────
+    const clockSkewSamplesRef = useRef([]);
 
     const particles = useMemo(
         () =>
@@ -82,53 +101,124 @@ export default function TimerPage() {
 
     const syncFromServer = useCallback(async () => {
         const reqStart = Date.now();
-        const response = await fetch("/api/timer-state");
-        if (!response.ok) {
-            throw new Error(`Timer sync failed with status ${response.status}`);
+
+        try {
+            const response = await fetch("/api/timer-state");
+            if (!response.ok) {
+                throw new Error(`Timer sync failed with status ${response.status}`);
+            }
+
+            const reqEnd = Date.now();
+            const payload = await response.json();
+
+            // ── Validate server response ──────────────────────────────────
+            if (typeof payload.now !== "number" || !Number.isFinite(payload.now)) {
+                throw new Error("Invalid server timestamp in response");
+            }
+
+            // ── Validate essential elapsed/remaining fields ───────────────
+            if (typeof payload.elapsedMs !== "number" || !Number.isFinite(payload.elapsedMs)) {
+                throw new Error("Invalid server elapsedMs in response");
+            }
+            if (typeof payload.remainingMs !== "number" || !Number.isFinite(payload.remainingMs)) {
+                throw new Error("Invalid server remainingMs in response");
+            }
+
+            const serverNow = payload.now;
+            const clientMidpoint = Math.round((reqStart + reqEnd) / 2);
+
+            // ── Calculate raw offset ──────────────────────────────────────
+            const rawOffset = serverNow - clientMidpoint;
+
+            // ── Detect clock skew (now less critical since we use server elapsed time) ──
+            clockSkewSamplesRef.current.push(rawOffset);
+            if (clockSkewSamplesRef.current.length > MAX_CLOCK_SKEW_SAMPLES) {
+                clockSkewSamplesRef.current.shift();
+            }
+
+            const avgSkew = clockSkewSamplesRef.current.length > 0
+                ? clockSkewSamplesRef.current.reduce((a, b) => a + b, 0) / clockSkewSamplesRef.current.length
+                : 0;
+
+            const skewVariance = clockSkewSamplesRef.current.length > 0
+                ? Math.max(...clockSkewSamplesRef.current.map(s => Math.abs(s - avgSkew)))
+                : 0;
+
+            const hasClockSkewWarning = skewVariance > CLOCK_SKEW_THRESHOLD;
+
+            setState((prev) => ({
+                ...prev,
+                startedAt:
+                    typeof payload.startedAt === "number" || payload.startedAt === null
+                        ? payload.startedAt
+                        : prev.startedAt,
+                durationMs: typeof payload.durationMs === "number" ? payload.durationMs : prev.durationMs,
+                // Smooth: blend previous offset 70% + new 30% to dampen jitter
+                serverOffsetMs: Math.round(prev.serverOffsetMs * 0.7 + rawOffset * 0.3),
+                // Store server-calculated times for use in render
+                serverElapsedMs: payload.elapsedMs,
+                serverRemainingMs: payload.remainingMs,
+                loading: false,
+                error: "",
+                lastSyncTime: Date.now(),
+                clockSkewWarning: hasClockSkewWarning
+            }));
+
+            // ── Reset retry state on success ──────────────────────────────
+            retryStateRef.current = {
+                failureCount: 0,
+                nextRetryTime: Date.now(),
+                maxRetries: 8
+            };
+
+        } catch (err) {
+            console.error("[Sync Error]", err.message);
+
+            const retry = retryStateRef.current;
+            const backoffMs = Math.min(30000, 1000 * Math.pow(2, retry.failureCount));
+            retry.failureCount += 1;
+            retry.nextRetryTime = Date.now() + backoffMs;
+
+            if (retry.failureCount >= retry.maxRetries) {
+                setState((prev) => ({
+                    ...prev,
+                    loading: false,
+                    error: "Unable to sync timer. Retrying indefinitely. Check your connection."
+                }));
+            } else {
+                setState((prev) => ({
+                    ...prev,
+                    loading: false,
+                    error: `Sync error (attempt ${retry.failureCount}). Retrying...`
+                }));
+            }
         }
-        const reqEnd = Date.now();
-        const payload = await response.json();
-
-        // Use request midpoint to account for network RTT, then smooth with 70/30 avg
-        const rawOffset = typeof payload.now === "number"
-            ? payload.now - Math.round((reqStart + reqEnd) / 2)
-            : null;
-
-        setState((prev) => ({
-            ...prev,
-            startedAt:
-                typeof payload.startedAt === "number" || payload.startedAt === null
-                    ? payload.startedAt
-                    : prev.startedAt,
-            durationMs: typeof payload.durationMs === "number" ? payload.durationMs : prev.durationMs,
-            // Smooth: blend previous offset 70% + new 30% to dampen jitter
-            serverOffsetMs: rawOffset !== null
-                ? Math.round(prev.serverOffsetMs * 0.7 + rawOffset * 0.3)
-                : prev.serverOffsetMs,
-            loading: false,
-            error: ""
-        }));
     }, []);
 
     // Initial sync on mount
     useEffect(() => {
-        syncFromServer().catch(() => {
-            setState((prev) => ({
-                ...prev,
-                loading: false,
-                error: "Unable to sync timer state with server."
-            }));
-        });
+        syncFromServer();
     }, [syncFromServer]);
 
-    // Adaptive polling — 3s before start, 60s once running.
-    // state.startedAt is a dependency so React tears down and recreates
-    // the interval with the correct delay the moment startedAt changes.
-    const pollInterval = state.startedAt !== null ? 60_000 : 3_000;
+    // ── Adaptive polling with exponential backoff ─────────────────────────
     useEffect(() => {
-        const poll = setInterval(() => syncFromServer().catch(() => { }), pollInterval);
-        return () => clearInterval(poll);
-    }, [syncFromServer, pollInterval]);
+        const poll = () => {
+            const now = Date.now();
+            const retry = retryStateRef.current;
+
+            // Only retry if the backoff time has elapsed
+            if (now < retry.nextRetryTime) {
+                return;
+            }
+
+            syncFromServer().catch(() => { });
+        };
+
+        // Determine poll interval based on state
+        const basePollInterval = state.startedAt !== null ? 60_000 : 3_000;
+        const interval = setInterval(poll, basePollInterval);
+        return () => clearInterval(interval);
+    }, [syncFromServer, state.startedAt]);
 
 
     useEffect(() => {
@@ -139,9 +229,21 @@ export default function TimerPage() {
     }, []);
 
     const syncedNow = clockNow + state.serverOffsetMs;
-    const elapsedMs = state.startedAt === null ? 0 : Math.max(0, syncedNow - state.startedAt);
-    const remainingMs =
-        state.startedAt === null ? state.durationMs : Math.max(0, state.durationMs - elapsedMs);
+    
+    // ── Use server-calculated elapsed/remaining time as source of truth ──────
+    // Calculate how much time has passed since last sync
+    const timeSinceSyncMs = state.lastSyncTime ? Date.now() - state.lastSyncTime : 0;
+    
+    // Estimate current elapsed time based on server value + time since sync
+    // This allows smooth interpolation between syncs instead of jumping every 3-60 seconds
+    const estimatedElapsedMs = Math.max(0, state.serverElapsedMs + timeSinceSyncMs);
+    const elapsedMs = state.startedAt === null ? 0 : Math.min(estimatedElapsedMs, state.durationMs);
+    
+    // Calculate remaining from estimated elapsed
+    const remainingMs = state.startedAt === null 
+        ? state.durationMs 
+        : Math.max(0, state.durationMs - elapsedMs);
+    
     const { hours, minutes, seconds } = useMemo(() => getTimeParts(remainingMs), [remainingMs]);
 
     // Calculate normalized progress from 0.0 (start) to 1.0 (deadline)
@@ -186,18 +288,43 @@ export default function TimerPage() {
 
             const payload = await response.json();
 
+            // ── Validate response data ────────────────────────────────────
+            if (typeof payload.now !== "number" || !Number.isFinite(payload.now)) {
+                throw new Error("Invalid server timestamp in start response");
+            }
+
+            if (typeof payload.elapsedMs !== "number" || !Number.isFinite(payload.elapsedMs)) {
+                throw new Error("Invalid server elapsedMs in start response");
+            }
+
+            if (typeof payload.remainingMs !== "number" || !Number.isFinite(payload.remainingMs)) {
+                throw new Error("Invalid server remainingMs in start response");
+            }
+
+            const newOffset = payload.now - Date.now();
+
             setState((prev) => ({
                 ...prev,
                 startedAt: typeof payload.startedAt === "number" ? payload.startedAt : prev.startedAt,
                 durationMs: typeof payload.durationMs === "number" ? payload.durationMs : prev.durationMs,
-                serverOffsetMs: typeof payload.now === "number" ? payload.now - Date.now() : prev.serverOffsetMs,
+                serverOffsetMs: Math.round(prev.serverOffsetMs * 0.5 + newOffset * 0.5),
+                serverElapsedMs: payload.elapsedMs,
+                serverRemainingMs: payload.remainingMs,
+                lastSyncTime: Date.now(),
                 error: ""
             }));
-            // started successfully
-        } catch {
+
+            // Reset retry state on successful start
+            retryStateRef.current = {
+                failureCount: 0,
+                nextRetryTime: Date.now(),
+                maxRetries: 8
+            };
+        } catch (err) {
+            console.error("[Start Error]", err);
             setState((prev) => ({
                 ...prev,
-                error: "Failed to start timer. Please try again."
+                error: "Failed to start timer. Please check your connection and try again."
             }));
         } finally {
             setIsStarting(false);
@@ -384,7 +511,7 @@ export default function TimerPage() {
                             aria-label="Start 24-hour hackathon countdown"
                             className="start-btn rounded-xl px-8 py-3 font-display text-base font-semibold uppercase tracking-[0.12em] transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-65 sm:text-lg"
                         >
-                            {isStarting ? "Starting..." : "Start Countdown"}
+                            {isStarting ? "Starting..." : "Launch"}
                         </button>
                     </div>
 
@@ -393,6 +520,12 @@ export default function TimerPage() {
                     {state.error && (
                         <p role="status" className="error-text mt-5 text-sm sm:text-base">
                             {state.error}
+                        </p>
+                    )}
+
+                    {state.clockSkewWarning && !state.error && (
+                        <p role="alert" className="mt-5 text-sm text-yellow-300/90">
+                            ⚠️ Large time difference detected. Check your system clock.
                         </p>
                     )}
 

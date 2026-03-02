@@ -9,7 +9,25 @@ const STATE_FILE = path.join(__dirname, "timer-state.json");
 const DIST_DIR = path.join(__dirname, "dist");
 const DIST_INDEX = path.join(DIST_DIR, "index.html");
 
-// ── Simple module-level state ───────────────────────────────────────────────
+// ── Server uptime tracking for clock skew detection ──────────────────────────
+const SERVER_START_TIME = Date.now();
+
+// ── Timestamp validation utilities ────────────────────────────────────────────
+function isValidTimestamp(ts) {
+  // Reject timestamps that are:
+  // - Not a finite number
+  // - More than 1 year in the future
+  // - More than 10 years in the past
+  return (
+    typeof ts === "number" &&
+    Number.isFinite(ts) &&
+    ts > 0 &&
+    ts > (Date.now() - 10 * 365.25 * 24 * 60 * 60 * 1000) &&
+    ts <= (Date.now() + 365.25 * 24 * 60 * 60 * 1000)
+  );
+}
+
+// ── Module-level state ─────────────────────────────────────────────────────
 // Guard against NaN: Number("null") and Number("undefined") return NaN
 const _envTs = Number(process.env.TIMER_STARTED_AT);
 let startedAt = (process.env.TIMER_STARTED_AT && Number.isFinite(_envTs) && _envTs > 0)
@@ -20,14 +38,23 @@ let startedAt = (process.env.TIMER_STARTED_AT && Number.isFinite(_envTs) && _env
 try {
   if (fs.existsSync(STATE_FILE)) {
     const saved = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-    if (typeof saved.startedAt === "number" && Number.isFinite(saved.startedAt)) {
+    if (isValidTimestamp(saved.startedAt)) {
       startedAt = saved.startedAt;
+      console.log(`[startup] Restored timer state: startedAt=${startedAt}`);
+    } else if (saved.startedAt !== null) {
+      console.warn(`[startup] Invalid state in file: startedAt=${saved.startedAt}`);
     }
   }
 } catch (err) {
   console.warn("Could not read timer-state.json on startup:", err.message);
 }
-console.log(`[startup] TIMER_STARTED_AT env=${process.env.TIMER_STARTED_AT} → startedAt=${startedAt}`);
+
+if (startedAt !== null && !isValidTimestamp(startedAt)) {
+  console.warn(`[startup] Invalid env var TIMER_STARTED_AT=${startedAt}, resetting to null`);
+  startedAt = null;
+}
+
+console.log(`[startup] Initial state: startedAt=${startedAt} (server time: ${Date.now()})`);
 
 function saveState() {
   try {
@@ -46,44 +73,110 @@ if (fs.existsSync(DIST_INDEX)) {
 
 // ── API Routes ──────────────────────────────────────────────────────────────
 app.get("/api/timer-state", (req, res) => {
-  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now() });
+  // Return precise server-side calculations to eliminate client-side clock skew
+  const serverNow = Date.now();
+  const elapsedMs = startedAt === null ? 0 : Math.max(0, serverNow - startedAt);
+  const remainingMs = startedAt === null ? DURATION_MS : Math.max(0, DURATION_MS - elapsedMs);
+
+  res.json({
+    startedAt,
+    durationMs: DURATION_MS,
+    elapsedMs,      // ← Server-calculated elapsed time (eliminates clock skew)
+    remainingMs,    // ← Server-calculated remaining time
+    now: serverNow, // ← For offset calculation
+    serverUptime: serverNow - SERVER_START_TIME,
+    version: 3 // API version bump for new fields
+  });
 });
 
 app.post("/api/start", (req, res) => {
-  // Guard against null AND NaN (from bad TIMER_STARTED_AT env var)
+  // Prevent race conditions: only start if not already started
   if (startedAt === null || !Number.isFinite(startedAt)) {
     startedAt = Date.now();
     saveState();
     console.log(`[/api/start] Timer started at ${startedAt}`);
+  } else {
+    console.log(`[/api/start] Timer already running since ${startedAt}`);
   }
-  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now() });
+
+  const serverNow = Date.now();
+  const elapsedMs = startedAt === null ? 0 : Math.max(0, serverNow - startedAt);
+  const remainingMs = startedAt === null ? DURATION_MS : Math.max(0, DURATION_MS - elapsedMs);
+
+  res.json({
+    startedAt,
+    durationMs: DURATION_MS,
+    elapsedMs,
+    remainingMs,
+    now: serverNow,
+    alreadyRunning: startedAt !== null && (startedAt < Date.now() - 1000),
+    version: 3
+  });
 });
 
 
 app.post("/api/reset", (req, res) => {
+  const wasStarted = startedAt !== null;
   startedAt = null;
   saveState();
   console.log("Timer reset.");
-  res.json({ startedAt, durationMs: DURATION_MS, now: Date.now() });
+
+  const serverNow = Date.now();
+  res.json({
+    startedAt: null,
+    durationMs: DURATION_MS,
+    elapsedMs: 0,
+    remainingMs: DURATION_MS,
+    now: serverNow,
+    wasRunning: wasStarted,
+    version: 3
+  });
+});
+
+// ── Diagnostic endpoint (for debugging clock skew issues) ────────────────────
+app.get("/api/debug/timer", (req, res) => {
+  const serverNow = Date.now();
+  const elapsedMs = startedAt === null ? 0 : Math.max(0, serverNow - startedAt);
+  const remainingMs = startedAt === null ? DURATION_MS : Math.max(0, DURATION_MS - elapsedMs);
+  const hours = Math.floor(elapsedMs / (60 * 60 * 1000));
+  const minutes = Math.floor((elapsedMs % (60 * 60 * 1000)) / (60 * 1000));
+  const seconds = Math.floor((elapsedMs % (60 * 1000)) / 1000);
+  const remainHours = Math.floor(remainingMs / (60 * 60 * 1000));
+  const remainMinutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+  const remainSeconds = Math.floor((remainingMs % (60 * 1000)) / 1000);
+
+  res.json({
+    serverTime: new Date(serverNow).toISOString(),
+    startedAt: startedAt ? new Date(startedAt).toISOString() : null,
+    timerRunning: startedAt !== null,
+    elapsed: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
+    remaining: `${String(remainHours).padStart(2, "0")}:${String(remainMinutes).padStart(2, "0")}:${String(remainSeconds).padStart(2, "0")}`,
+    elapsedMs,
+    remainingMs,
+    version: 3
+  });
 });
 
 // ── Test endpoints ──────────────────────────────────────────────────────────
 app.post("/api/test/14hr", (req, res) => {
   startedAt = Date.now() - 10 * 3600 * 1000;
   saveState();
-  res.json({ success: true, remainingHours: 14 });
+  const serverNow = Date.now();
+  res.json({ success: true, remainingHours: 14, startedAt, now: serverNow, version: 2 });
 });
 
 app.post("/api/test/4hr", (req, res) => {
   startedAt = Date.now() - 20 * 3600 * 1000;
   saveState();
-  res.json({ success: true, remainingHours: 4 });
+  const serverNow = Date.now();
+  res.json({ success: true, remainingHours: 4, startedAt, now: serverNow, version: 2 });
 });
 
 app.post("/api/test/2min", (req, res) => {
   startedAt = Date.now() - 23 * 3600 * 1000 - 58 * 60 * 1000;
   saveState();
-  res.json({ success: true, remainingMinutes: 2 });
+  const serverNow = Date.now();
+  res.json({ success: true, remainingMinutes: 2, startedAt, now: serverNow, version: 2 });
 });
 
 // ── SPA fallback ────────────────────────────────────────────────────────────
