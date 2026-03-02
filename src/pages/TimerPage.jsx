@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import NeuralNetCanvas from "../components/backgrounds/NeuralNetCanvas";
 import GravityGridCanvas from "../components/backgrounds/GravityGridCanvas";
@@ -7,6 +7,17 @@ import FallingSandCanvas from "../components/backgrounds/FallingSandCanvas";
 import PremiumBgCanvas from "../components/backgrounds/PremiumBgCanvas";
 import CelebrationCanvas from "../components/backgrounds/CelebrationCanvas";
 import TimeBox from "../components/ui/TimeBox";
+
+// ── Memoized TimeBox to prevent re-renders when parent updates ──────────────
+const MemoTimeBox = memo(TimeBox);
+
+// ── Memoized canvas components to prevent re-renders ───────────────────────
+const MemoNeuralNetCanvas = memo(NeuralNetCanvas);
+const MemoGravityGridCanvas = memo(GravityGridCanvas);
+const MemoCosmicDustCanvas = memo(CosmicDustCanvas);
+const MemoFallingSandCanvas = memo(FallingSandCanvas);
+const MemoPremiumBgCanvas = memo(PremiumBgCanvas);
+const MemoCelebrationCanvas = memo(CelebrationCanvas);
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
@@ -221,10 +232,20 @@ export default function TimerPage() {
     }, [syncFromServer, state.startedAt]);
 
 
+    // ── Optimized clock tick: only update when second changes ────────────────
     useEffect(() => {
-        const tick = setInterval(() => {
-            setClockNow(Date.now());
-        }, 1000);
+        let lastSecond = Math.floor(Date.now() / 1000);
+        
+        const checkSecondChange = () => {
+            const currentSecond = Math.floor(Date.now() / 1000);
+            if (currentSecond !== lastSecond) {
+                lastSecond = currentSecond;
+                setClockNow(Date.now());
+            }
+        };
+
+        // Check 10x per second to catch second changes quickly
+        const tick = setInterval(checkSecondChange, 100);
         return () => clearInterval(tick);
     }, []);
 
@@ -333,8 +354,8 @@ export default function TimerPage() {
 
     return (
         <div className="relative min-h-screen overflow-hidden text-slate-100">
-            {/* ── Celebration Canvas (fires on finish) ── */}
-            <CelebrationCanvas active={finished} />
+                    {/* ── Celebration Canvas (fires on finish) ── */}
+            <MemoCelebrationCanvas active={finished} />
 
             <div
                 className="absolute inset-0 pointer-events-none transition-transform duration-1000 ease-linear"
@@ -347,13 +368,13 @@ export default function TimerPage() {
                     <div className="bg-theme-sheen absolute inset-0" aria-hidden="true"></div>
 
                     {/* ── Conceptual Visuals (Neural Net + Gravity Grid) ── */}
-                    <NeuralNetCanvas />
-                    <GravityGridCanvas />
-                    <CosmicDustCanvas />
-                    <FallingSandCanvas />
+                    <MemoNeuralNetCanvas />
+                    <MemoGravityGridCanvas />
+                    <MemoCosmicDustCanvas />
+                    <MemoFallingSandCanvas />
 
                     {/* ── Original Premium animated background (gradient orbs + scanner) ── */}
-                    <PremiumBgCanvas />
+                    <MemoPremiumBgCanvas />
 
                     {/* ── Immersive Portal Edge Glow ── */}
                     <div className="portal-glow-edge" aria-hidden="true"></div>
@@ -435,17 +456,17 @@ export default function TimerPage() {
                 }}
             ></div>
 
-            <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-2 pb-10 pt-16 text-center sm:px-6 sm:pt-20">
-                <header className="mt-2 w-full space-y-3 sm:space-y-4">
-                    <h1 className="font-display text-4xl tracking-[0.1em] text-white sm:text-5xl md:text-6xl title-breathe">
+            <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center px-2 pb-6 pt-10 text-center sm:px-4 sm:pb-10 sm:pt-16 md:px-6 md:pb-12 md:pt-20 lg:px-8">
+                <header className="mt-2 w-full space-y-2 sm:space-y-3 md:space-y-4">
+                    <h1 className="font-display text-2xl tracking-[0.1em] text-white sm:text-3xl md:text-5xl lg:text-6xl title-breathe">
                         UDBHAV 2K26
                     </h1>
-                    <p className="font-body text-base font-medium uppercase tracking-[0.22em] text-cyan-100/90 sm:text-lg">
+                    <p className="font-body text-xs font-medium uppercase tracking-[0.22em] text-cyan-100/90 sm:text-sm md:text-base lg:text-lg">
                         National Level Hackathon
                     </p>
                 </header>
 
-                <section className="relative mt-14 w-full max-w-4xl">
+                <section className="relative mt-8 w-full max-w-4xl sm:mt-10 md:mt-14 lg:mt-16">
                     <AnimatePresence mode="wait">
                         {finished ? (
                             <motion.div
@@ -486,45 +507,45 @@ export default function TimerPage() {
                                     aria-live="polite"
                                     className="timer-row relative z-10 mx-auto flex w-fit items-center justify-center"
                                 >
-                                    <TimeBox label="HOURS" value={hours} phaseClass={phaseClass} />
+                                    <MemoTimeBox label="HOURS" value={hours} phaseClass={phaseClass} />
                                     <span className="timer-colon mb-6 px-0.5 text-5xl text-slate-100 sm:mb-8 sm:px-2 sm:text-7xl">
                                         :
                                     </span>
-                                    <TimeBox label="MINUTES" value={minutes} phaseClass={phaseClass} />
+                                    <MemoTimeBox label="MINUTES" value={minutes} phaseClass={phaseClass} />
                                     <span className="timer-colon mb-6 px-0.5 text-5xl text-slate-100 sm:mb-8 sm:px-2 sm:text-7xl">
                                         :
                                     </span>
-                                    <TimeBox label="SECONDS" value={seconds} phaseClass={phaseClass} />
+                                    <MemoTimeBox label="SECONDS" value={seconds} phaseClass={phaseClass} />
                                 </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
 
                     <div
-                        className={`overflow-hidden transition-all duration-700 ease-out ${hasStarted || isStarting ? "mt-0 max-h-0 opacity-0" : "mt-12 max-h-36 opacity-100"
+                        className={`overflow-hidden transition-all duration-700 ease-out ${hasStarted || isStarting ? "mt-0 max-h-0 opacity-0" : "mt-6 max-h-40 opacity-100 sm:mt-8 md:mt-10 lg:mt-12"
                             }`}
                     >
                         <button
                             type="button"
                             onClick={handleStart}
                             disabled={isStarting || state.loading}
-                            aria-label="Start 24-hour hackathon countdown"
-                            className="start-btn rounded-xl px-8 py-3 font-display text-base font-semibold uppercase tracking-[0.12em] transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-65 sm:text-lg"
+                            aria-label="Launch 24-hour hackathon countdown"
+                            className="start-btn rounded-xl font-display font-semibold uppercase tracking-[0.12em] transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-65"
                         >
                             {isStarting ? "Starting..." : "Launch"}
                         </button>
                     </div>
 
-                    {state.loading && <p className="mt-7 text-sm text-slate-300/85">Syncing global timer...</p>}
+                    {state.loading && <p className="mt-5 text-xs text-slate-300/85 sm:text-sm md:text-base">Syncing global timer...</p>}
 
                     {state.error && (
-                        <p role="status" className="error-text mt-5 text-sm sm:text-base">
+                        <p role="status" className="error-text mt-4 text-xs sm:text-sm md:text-base">
                             {state.error}
                         </p>
                     )}
 
                     {state.clockSkewWarning && !state.error && (
-                        <p role="alert" className="mt-5 text-sm text-yellow-300/90">
+                        <p role="alert" className="mt-4 text-xs text-yellow-300/90 sm:text-sm md:text-base">
                             ⚠️ Large time difference detected. Check your system clock.
                         </p>
                     )}

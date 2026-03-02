@@ -346,6 +346,32 @@ body {
     box-shadow 0.22s ease,
     border-color 0.22s ease,
     background 0.22s ease;
+  padding: 0.65rem 1.5rem;
+  font-size: 0.85rem;
+}
+
+/* Small phones: 320px - 419px */
+@media (max-width: 419px) {
+  .start-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Large phones: 420px - 639px */
+@media (min-width: 420px) and (max-width: 639px) {
+  .start-btn {
+    padding: 0.6rem 1.3rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Tablets and up: 640px+ */
+@media (min-width: 640px) {
+  .start-btn {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+  }
 }
 
 .start-btn:hover {
@@ -605,17 +631,30 @@ body {
 
 @media (max-width: 419px) {
   .timer-row {
-    transform: scale(0.72);
+    transform: scale(0.65);
     transform-origin: center top;
   }
 
   /* Collapse the space the scaled row would normally take */
   .timer-wrap {
+    height: 16rem;
+  }
+}
+
+/* Small phones: 420px - 519px */
+@media (min-width: 420px) and (max-width: 519px) {
+  .timer-row {
+    transform: scale(0.78);
+    transform-origin: center top;
+  }
+
+  .timer-wrap {
     height: 18rem;
   }
 }
 
-@media (min-width: 420px) and (max-width: 639px) {
+/* Large phones: 520px - 639px */
+@media (min-width: 520px) and (max-width: 639px) {
   .timer-row {
     transform: scale(0.88);
     transform-origin: center top;
@@ -623,6 +662,32 @@ body {
 
   .timer-wrap {
     height: 20rem;
+  }
+}
+
+/* Tablets (Portrait): 640px - 767px */
+@media (min-width: 640px) and (max-width: 767px) {
+  .timer-row {
+    gap: 0.4rem;
+    transform: none;
+  }
+
+  .timer-wrap {
+    height: auto;
+  }
+}
+
+/* Tablets (Landscape) & Small Laptops: 768px - 1023px */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .timer-row {
+    gap: 0.55rem;
+  }
+}
+
+/* Desktop & Large Laptops: 1024px+ */
+@media (min-width: 1024px) {
+  .timer-row {
+    gap: 0.65rem;
   }
 }
 
